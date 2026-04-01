@@ -12,6 +12,8 @@ type Props = {
   newItems: RSSParser.Item[];
 };
 
+const VISIBLE_UNVISITED_LIMIT = 20;
+
 const onLinkClick = async (feedUrl?: string, itemLink?: string) => {
   if (!feedUrl || !itemLink) {
     return;
@@ -46,6 +48,8 @@ export function NewItemsList(props: Props) {
   const { favoriteStates, toggleFavorite } = useFavorites(newItems, {
     feed,
   });
+  const visibleItems = newItems.slice(0, VISIBLE_UNVISITED_LIMIT);
+  const hiddenItems = newItems.slice(VISIBLE_UNVISITED_LIMIT);
 
   const markVisitedInCache = (links: string[]) => {
     queryClient.setQueryData<Feed>(["feed", feedUrl], (old) => {
@@ -59,27 +63,39 @@ export function NewItemsList(props: Props) {
     queryClient.invalidateQueries({ queryKey: ["feeds"] });
   };
 
+  const renderFeedItem = (item: RSSParser.Item) => {
+    if (!item.link) {
+      return null;
+    }
+
+    return (
+      <FeedItem
+        key={item.link}
+        item={item}
+        feed={feed}
+        onClick={() =>
+          onLinkClick(feedUrl, item.link).then(() =>
+            markVisitedInCache([item.link!])
+          )
+        }
+        onFavoriteClick={() => toggleFavorite(item)}
+        isFavorited={favoriteStates[item.link]}
+        testId="new-item"
+      />
+    );
+  };
+
   return (
     <>
       <ul className={Styles.list}>
-        {newItems?.map((item) =>
-          item.link ? (
-            <FeedItem
-              key={item.link}
-              item={item}
-              feed={feed}
-              onClick={() =>
-                onLinkClick(feedUrl, item.link).then(() =>
-                  markVisitedInCache([item.link!])
-                )
-              }
-              onFavoriteClick={() => toggleFavorite(item)}
-              isFavorited={favoriteStates[item.link]}
-              testId="new-item"
-            />
-          ) : null
-        )}
+        {visibleItems.map(renderFeedItem)}
       </ul>
+      {hiddenItems.length ? (
+        <details>
+          <summary>See other {hiddenItems.length} unvisited</summary>
+          <ul className={Styles.list}>{hiddenItems.map(renderFeedItem)}</ul>
+        </details>
+      ) : null}
       {newItems.length ? (
         <button
           onClick={() => {
