@@ -87,13 +87,13 @@ export function NewItemsList(props: Props) {
 
   return (
     <>
-      <ul className={Styles.list}>
-        {visibleItems.map(renderFeedItem)}
-      </ul>
+      <ul className={Styles.list}>{visibleItems.map(renderFeedItem)}</ul>
       {hiddenItems.length ? (
         <details>
           <summary>See other {hiddenItems.length} unvisited</summary>
-          <ul className={Styles.list}>{hiddenItems.map(renderFeedItem)}</ul>
+          <ul className={`${Styles.list} ${Styles.hiddenList}`}>
+            {hiddenItems.map(renderFeedItem)}
+          </ul>
         </details>
       ) : null}
       {newItems.length ? (
